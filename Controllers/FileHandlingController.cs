@@ -4,6 +4,7 @@ using FileUpload.API.Models.DataTransferObject;
 using FileUpload.API.Repository.Presistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 using System.Net;
 
 namespace FileUpload.API.Controllers
@@ -30,19 +31,23 @@ namespace FileUpload.API.Controllers
         }
 
         [HttpPost(nameof(Create))]
-        public async Task<IActionResult> Create([FromBody] FileRequest fileRequest)
+        public async Task<IActionResult> Create(IFormFile formFile, string imageCode)
         {
 
-            FileHandling d = new FileHandling()
-            {
-                ImageCode = fileRequest.ImageCode,
-                ImageName = fileRequest.ImageName
-            };
-            
-            await _fileRepository.Add(d);
-            response.Result = "Data success created";
-            response.StatusCode = (int)HttpStatusCode.Created;
-            return Ok(response);
+             var status = await _fileRepository.Upload(formFile, imageCode);
+             if(status.IsSuccess)
+             {
+                  response.Result = "Data success created";
+                  response.StatusCode = (int)HttpStatusCode.Created;
+                  return Ok(response);
+             }
+             else
+             {
+                  response.InternalMessage = status.Message;
+                  response.IsError = true;
+                  response.StatusCode = (int)HttpStatusCode.InternalServerError;
+                  return BadRequest(response);
+             }
         }
 
         [HttpPut("Update")]
